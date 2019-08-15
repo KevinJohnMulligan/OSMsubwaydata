@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>Dot Metro Line Drawing Tool</title>
+    <link rel="stylesheet" href="http://cache.amap.com/lbs/static/main1119.css"/>
+    <script src="http://webapi.amap.com/maps?v=1.4.15&key=77388f27abdc55174614cbbe3efb48a7"></script>
+    <script type="text/javascript" src="http://cache.amap.com/lbs/static/addToolbar.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<div id="exportPane" style="display: none; position: absolute; left: 60px; background: #fff none repeat scroll 0 0; border: 1px solid;">
+	<div style="float:left; width:95%; ">
+		<textarea id="exportTextarea" style="width:100%;" rows="30"></textarea>
+	</div>
+	<div style="float:left;">
+		
+		<button onclick="draw()">Draw line data</button>
+	</div>
+</div>
+<script>
+
+	document.getElementById("exportPane").style.display = "block";
+	
+    const map = new AMap.Map("container", {
+        resizeEnable: true,
+        center: [114.06124, 22.539586],//地图中心点
+        zoom: 13, //地图显示的缩放级别
+		labelzIndex: 14
+    });
+	
+	let data = [];
+	let segments = [];
+	
+	function Point(segment, lat, lng) {
+		this.segment = segment;
+		this.lat = lat;
+		this.lng = lng;
+	}
+	
+	function Segment(id, initialPoint) {
+		this.id = id;
+		this.points = [];
+		this.points.push(initialPoint);
+	}
+	
+	function draw() {
+		const text = document.getElementById("exportTextarea").value;
+		
+		const dataPerLine = text.split("\n");
+		
+		
+		for (const i in dataPerLine) {
+			const elements = dataPerLine[i].split(", ");
+			data.push(
+				new Point(elements[2], elements[3], elements[4])
+			);
+		}
+		//data.sort(function (a, b) {return a.segment - b.segment;});
+		
+		let currentID = "";
+		let lastID = "";
+		for (const i in data) {
+			currentID = data[i].segment;
+			
+			if (lastID.length === 0 || currentID !== lastID) {
+				segments.push(
+					new Segment(data[i].segment, data[i])
+				);
+			}
+			else {
+				segments[segments.length - 1].points.push(data[i]);
+			}
+			lastID = currentID;
+		
+		}
+
+		//console.log(segments);
+		
+		for (const i in segments) {
+			const segment = segments[i];
+			let linePoints = [];
+			for (const p in segment.points) {
+				linePoints.push([segment.points[p].lng, segment.points[p].lat]);
+			}
+			//console.log(linePoints);
+			
+			
+			var polyline = new AMap.Polyline({
+				path: linePoints,
+				isOutline: true,
+				outlineColor: '#ffeeff',
+				borderWeight: 0,
+				strokeColor: "#3366FF", 
+				strokeOpacity: 1,
+				strokeWeight: 4,
+				// 折线样式还支持 'dashed'
+				strokeStyle: "solid",
+				// strokeStyle是dashed时有效
+				strokeDasharray: [10, 5],
+				lineJoin: 'round',
+				lineCap: 'round',
+				zIndex: 50,
+			});
+			
+			polyline.setMap(map);
+			//console.log("polyline set");
+			/*
+			for (const i in data) {
+				var circle = new AMap.Circle({
+				    center: new AMap.LngLat(data[i].lng, data[i].lat), // 圆心位置
+				    radius: 50,  //半径
+				    strokeColor: "#F33",  //线颜色
+				    strokeOpacity: 1,  //线透明度
+				    strokeWeight: 3,  //线粗细度
+				    fillColor: "#ee2200",  //填充颜色
+				    fillOpacity: 0.35 //填充透明度
+				});
+
+          			circle.setMap(map);
+			//console.log("circle set");
+		    	}
+			*/
+		}
+		
+		document.getElementById("exportPane").style.display = "none";
+	}
+</script>
+</body>
+</html>
